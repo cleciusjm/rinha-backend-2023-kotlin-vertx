@@ -5,6 +5,7 @@ import io.vertx.core.http.HttpMethod.POST
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Router
+import java.lang.RuntimeException
 import java.util.*
 
 val dateRegex = Regex("""([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))""")
@@ -21,22 +22,24 @@ fun Router.registerPersonRoutes() {
                 putHeader("Location", "/pessoas/${body.id}")
                 end()
             }
-        } else ctx.endWith(422)
+        } else ctx.endWithJson(422)
     }
 
     route(GET, "/pessoas/:id").coHandler { ctx ->
         val id = ctx.pathParams()["id"]
         val result = db.find { it.id == id }
-        if (result == null) ctx.endWith(404)
-        else ctx.endWith(200, result.toString())
+        if (result == null) ctx.endWithJson(404)
+        else ctx.endWithJson(200, result.toString())
     }
 
     route(GET, "/pessoas").coHandler { ctx ->
-        ctx.endWith(200, JsonArray(db.toList()).toString())
+        val search = ctx.queryParam("t")?.first ?: throw RuntimeException()
+
+        ctx.endWithJson(200, JsonArray(db.filter { it.apelido!! == search }.toList()).toString())
     }
 
     route(GET, "/contagem-pessoas").coHandler { ctx ->
-        ctx.endWith(200, "${db.size}")
+        ctx.endWithJson(200, "${db.size}")
     }
 }
 

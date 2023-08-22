@@ -11,7 +11,7 @@ suspend fun main() {
     val vertx = Vertx.vertx(VertxOptions().apply { preferNativeTransport = true })
 
     val router = Router.router(vertx)
-    router.route().handler(BodyHandler.create());
+    router.route().handler(BodyHandler.create()).failureHandler { it.endWithJson(400) }
     router.registerHelloRoute()
     router.registerPersonRoutes()
 
