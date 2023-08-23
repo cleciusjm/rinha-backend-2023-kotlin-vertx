@@ -13,7 +13,7 @@ import io.vertx.kotlin.coroutines.await
 import java.lang.System.getenv
 
 suspend fun main() {
-    val vertx = Vertx.vertx(vertxOptionsOf( preferNativeTransport = true ))
+    val vertx = Vertx.vertx(vertxOptionsOf(preferNativeTransport = true))
     val db = MongoClient.create(vertx, json {
         obj("connection_string" to getenv("CONNECTION_STRING"))
     })
@@ -26,12 +26,14 @@ suspend fun main() {
         registerPersonRoutes(db)
     }
 
-    vertx.createHttpServer(httpServerOptionsOf(
-        reusePort = true,
-        tcpQuickAck = true,
-        tcpFastOpen = true,
-        tcpCork = true
-    )).requestHandler(router).listen(8080).await()
+    vertx.createHttpServer(
+        httpServerOptionsOf(
+            reusePort = true,
+            tcpQuickAck = true,
+            tcpFastOpen = true,
+            tcpCork = true
+        )
+    ).requestHandler(router).listen(8080).await()
 }
 
 private fun Router.registerHelloRoute() =

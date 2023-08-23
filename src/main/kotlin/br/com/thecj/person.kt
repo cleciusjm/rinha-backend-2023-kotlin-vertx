@@ -13,13 +13,9 @@ import io.vertx.kotlin.core.json.array
 import io.vertx.kotlin.core.json.json
 import io.vertx.kotlin.core.json.obj
 import io.vertx.kotlin.coroutines.await
-import io.vertx.kotlin.coroutines.toReceiveChannel
-import kotlinx.coroutines.channels.consumeEach
 import org.bson.types.ObjectId
-import java.lang.IllegalArgumentException
-import java.lang.RuntimeException
 
-val dateRegex = Regex("""([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))""")
+private val dateRegex = Regex("""([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))""")
 
 private const val COLL_PESSOAS = "pessoas"
 
@@ -83,19 +79,6 @@ suspend fun Router.registerPersonRoutes(db: MongoClient) {
             )
         }, FindOptions().setLimit(50).setBatchSize(50)).await()
 
-//        ctx.response().apply {
-//            statusCode = 200
-//            putHeader("Content-Type", "application/json")
-//            write("[")
-//            try {
-//                for (it in result) {
-//                    it.cleanup()
-//                    write(it.toBuffer())
-//                }
-//            } finally {
-//                end("]")
-//            }
-//        }
         ctx.endWithJson(200, JsonArray(result.onEach { it.cleanup() }).encode())
     }
 
