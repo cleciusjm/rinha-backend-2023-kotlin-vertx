@@ -6,7 +6,15 @@ import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.coroutines.vertxFuture
 
 fun Route.coHandler(action: suspend (RoutingContext) -> Unit): Route = handler { ctx ->
-    vertxFuture { action(ctx) }
+    vertxFuture {
+        try {
+            action(ctx)
+        } catch (e: Throwable) {
+            if (!ctx.response().ended()) {
+                ctx.fail(400)
+            }
+        }
+    }
 }
 
 fun RoutingContext.endWithJson(status: Int): Future<Void> = response().let { r ->
