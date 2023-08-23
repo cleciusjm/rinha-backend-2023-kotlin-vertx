@@ -4,11 +4,17 @@ import io.vertx.core.http.HttpMethod.GET
 import io.vertx.core.http.HttpMethod.POST
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
+import io.vertx.ext.mongo.FindOptions
+import io.vertx.ext.mongo.IndexModel
+import io.vertx.ext.mongo.IndexOptions
 import io.vertx.ext.mongo.MongoClient
 import io.vertx.ext.web.Router
+import io.vertx.kotlin.core.json.array
 import io.vertx.kotlin.core.json.json
 import io.vertx.kotlin.core.json.obj
 import io.vertx.kotlin.coroutines.await
+import io.vertx.kotlin.coroutines.toReceiveChannel
+import kotlinx.coroutines.channels.consumeEach
 import org.bson.types.ObjectId
 import java.lang.IllegalArgumentException
 import java.lang.RuntimeException
@@ -31,7 +37,15 @@ private const val FIELD_STACK = "stack"
 
 private const val FIELD_SEARCH = "search_field"
 
-fun Router.registerPersonRoutes(db: MongoClient) {
+suspend fun Router.registerPersonRoutes(db: MongoClient) {
+
+    db.createCollection(COLL_PESSOAS).await()
+    db.createIndexes(COLL_PESSOAS,
+        listOf(
+            json { obj(FIELD_SEARCH to 1) },
+            json { obj(FIELD_APELIDO to 1) }
+        ).map { IndexModel(it, IndexOptions()) }
+    ).await()
 
     route(POST, "/pessoas").consumes("application/json").coHandler { ctx ->
         val body = ctx.body().asJsonObject()
@@ -59,10 +73,30 @@ fun Router.registerPersonRoutes(db: MongoClient) {
 
     route(GET, "/pessoas").coHandler { ctx ->
         val search = ctx.queryParam("t")?.firstOrNull() ?: throw RuntimeException()
-        val result = db.find(COLL_PESSOAS, json {
-            obj(FIELD_SEARCH to search)
-        }).await().onEach { it.cleanup() }
-        ctx.endWithJson(200, JsonArray(result).toString())
+        val result = db.findWithOptions(COLL_PESSOAS, json {
+            obj(
+                "\$or" to array(
+                    obj(FIELD_SEARCH to search),
+                    obj(FIELD_SEARCH to obj("\$regex" to "^$search")),
+                    obj(FIELD_SEARCH to obj("\$regex" to search, "\$options" to "i"))
+                )
+            )
+        }, FindOptions().setLimit(50).setBatchSize(50)).await()
+
+//        ctx.response().apply {
+//            statusCode = 200
+//            putHeader("Content-Type", "application/json")
+//            write("[")
+//            try {
+//                for (it in result) {
+//                    it.cleanup()
+//                    write(it.toBuffer())
+//                }
+//            } finally {
+//                end("]")
+//            }
+//        }
+        ctx.endWithJson(200, JsonArray(result.onEach { it.cleanup() }).encode())
     }
 
     route(GET, "/contagem-pessoas").coHandler { ctx ->
@@ -99,12 +133,13 @@ fun JsonObject.preInsert() {
     put(FIELD_M_ID, id)
     put(
         FIELD_SEARCH, JsonArray(
-        listOfNotNull(
-            apelido,
-            nome,
-            *stack.toTypedArray()
-        ).map { it.lowercase() }
-    ))
+            listOfNotNull(
+                apelido,
+                nome,
+                *stack.toTypedArray()
+            ).map { it.lowercase() }
+                .distinct()
+        ))
 }
 
 fun JsonObject.cleanup() {

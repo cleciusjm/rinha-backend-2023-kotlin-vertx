@@ -9,4 +9,4 @@ JVM_OPTS="$JVM_OPTS -Dfile.encoding=UTF8"
 
 echo "Rodando com [JVM_OPTS=$JVM_OPTS] e [OPTS=$1] "
 
-JAVA_OPTS="$JVM_OPTS" java -jar /opt/app.jar $1
+java $JVM_OPTS -jar /opt/app.jar $1

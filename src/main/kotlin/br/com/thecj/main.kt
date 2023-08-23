@@ -5,6 +5,7 @@ import io.vertx.core.http.HttpMethod
 import io.vertx.ext.mongo.MongoClient
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.BodyHandler
+import io.vertx.kotlin.core.http.httpServerOptionsOf
 import io.vertx.kotlin.core.json.json
 import io.vertx.kotlin.core.json.obj
 import io.vertx.kotlin.core.vertxOptionsOf
@@ -25,7 +26,12 @@ suspend fun main() {
         registerPersonRoutes(db)
     }
 
-    vertx.createHttpServer().requestHandler(router).listen(8080).await()
+    vertx.createHttpServer(httpServerOptionsOf(
+        reusePort = true,
+        tcpQuickAck = true,
+        tcpFastOpen = true,
+        tcpCork = true
+    )).requestHandler(router).listen(8080).await()
 }
 
 private fun Router.registerHelloRoute() =
