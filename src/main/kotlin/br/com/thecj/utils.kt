@@ -10,9 +10,8 @@ fun Route.coHandler(action: suspend (RoutingContext) -> Unit): Route = handler {
         try {
             action(ctx)
         } catch (e: Throwable) {
-            e.printStackTrace()
             if (!ctx.response().ended()) {
-                ctx.fail(400)
+                ctx.response().setStatusCode(400).end()
             }
         }
     }

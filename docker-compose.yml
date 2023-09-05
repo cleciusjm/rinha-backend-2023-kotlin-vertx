@@ -15,7 +15,7 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: '480MB'
+          memory: '240MB'
 
 
   api2:
@@ -31,7 +31,7 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: '480MB'
+          memory: '240MB'
 
   nginx:
     image: nginx:latest
@@ -52,13 +52,14 @@ services:
 
   db:
     image: mongo:latest
+    command: --wiredTigerCacheSizeGB 2 --quiet --syslog --journalCommitInterval 500 --wiredTigerJournalCompressor none --syncdelay 0
     ports:
       - "27017:27017"
     deploy:
       resources:
         limits:
           cpus: '0.4'
-          memory: '2GB'
+          memory: '2450MB'
     hostname: db
     networks:
       - network
